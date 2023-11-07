@@ -8,6 +8,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Exception\InvalidOptionException;
 use Symfony\Component\Console\Exception\RuntimeException;
+use Algolia\AlgoliaSearch\SearchClient;
 
 class AlgoliaImportCommand extends Command 
 {
@@ -51,13 +52,51 @@ class AlgoliaImportCommand extends Command
         return $data;
     }
 
+    protected function importDataBatch(array $batchData, SearchClient $algoliaClient, string $indexName) {
+        sleep(1); //@todo
+    }
+
+    protected function importData(
+        array $data,
+        int $batchSize,
+        SearchClient $algoliaClient,
+        string $indexName,
+        callable $progressCallback
+    ) {
+        $i = 0;
+        $batch = array_slice($data, $i, $batchSize);
+
+        while(!empty($batch)) {
+            $this->importDataBatch($batch, $algoliaClient, $indexName);
+
+            $progressCallback($i +count($batch));
+
+            // prep for next iteration
+            $i += $batchSize;
+            $batch = array_slice($data, $i, $batchSize);
+
+            if ($i > 30)
+                break; //@todo
+        }
+    }
+
+    protected function getAlgoliaClient(string $applicationId, string $apiKey) : SearchClient
+    {
+        try {
+            return SearchClient::create($applicationId, $apiKey);
+        } catch (\Exception $e) {
+            $output->writeln('Unable to initalize Algolia client');
+            throw $e;
+        }
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $applicationId = $input->getOption(self::APPLICATION_ID);
         $apiKey = $input->getOption(self::API_KEY);
         $indexName = $input->getOption(self::INDEX_NAME);
         $inputFilename = $input->getOption(self::INPUT_FILENAME);
-        $batchSize = $input->getOption(self::BATCH_SIZE);
+        $batchSize = (int)$input->getOption(self::BATCH_SIZE);
 
         // Input validation guard clauses
         if(empty($applicationId)) {
@@ -74,6 +113,16 @@ class AlgoliaImportCommand extends Command
         }
 
         $importData = $this->getImportData($inputFilename);
+
+        $algoliaClient = $this->getAlgoliaClient($applicationId, $apiKey);
+        $algoliaClient->initIndex($indexName); //@todo
+
+
+        // We have valid params, data, and client. Let's import!
+        $totalSize = count($importData);
+        $this->importData($importData, $batchSize, $algoliaClient, $indexName, function($progressCount) {
+            var_dump($progressCount);
+        });
 
         return Command::SUCCESS;
     }
