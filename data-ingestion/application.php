@@ -3,9 +3,9 @@
 /**
  * Application entry point. Intended to be used by CLI.
  * 
- * Usage: `php application.php <params>`
+ * Usage: `php application.php algolia-import <params>`
  * 
- * See `php application.php help` for usage.
+ * See `php application.php algolia-import --help` for usage.
  */
 
 require __DIR__ . '/vendor/autoload.php';
