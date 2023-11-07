@@ -1,0 +1,11 @@
+{
+    "require": {
+        "symfony/console": "^5.4",
+        "algolia/algoliasearch-client-php": "^3.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src"
+        }
+    }
+}
