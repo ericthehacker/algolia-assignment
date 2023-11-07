@@ -9,6 +9,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Exception\InvalidOptionException;
 use Symfony\Component\Console\Exception\RuntimeException;
 use Algolia\AlgoliaSearch\SearchClient;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
 class AlgoliaImportCommand extends Command 
 {
@@ -69,13 +70,13 @@ class AlgoliaImportCommand extends Command
         while(!empty($batch)) {
             $this->importDataBatch($batch, $algoliaClient, $indexName);
 
-            $progressCallback($i +count($batch));
+            $progressCallback(count($batch));
 
             // prep for next iteration
             $i += $batchSize;
             $batch = array_slice($data, $i, $batchSize);
 
-            if ($i > 30)
+            if ($i > 50)
                 break; //@todo
         }
     }
@@ -92,6 +93,9 @@ class AlgoliaImportCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $io = new SymfonyStyle($input, $output);
+
+        // Get and validate options
         $applicationId = $input->getOption(self::APPLICATION_ID);
         $apiKey = $input->getOption(self::API_KEY);
         $indexName = $input->getOption(self::INDEX_NAME);
@@ -119,10 +123,11 @@ class AlgoliaImportCommand extends Command
 
 
         // We have valid params, data, and client. Let's import!
-        $totalSize = count($importData);
-        $this->importData($importData, $batchSize, $algoliaClient, $indexName, function($progressCount) {
-            var_dump($progressCount);
+        $io->progressStart(count($importData));
+        $this->importData($importData, $batchSize, $algoliaClient, $indexName, function($progressCount) use ($io) {
+            $io->progressAdvance($progressCount);
         });
+        $io->progressFinish();
 
         return Command::SUCCESS;
     }
