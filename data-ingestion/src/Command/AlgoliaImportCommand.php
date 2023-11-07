@@ -9,6 +9,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Exception\InvalidOptionException;
 use Symfony\Component\Console\Exception\RuntimeException;
 use Algolia\AlgoliaSearch\SearchClient;
+use Algolia\AlgoliaSearch\SearchIndex;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 class AlgoliaImportCommand extends Command 
@@ -53,38 +54,41 @@ class AlgoliaImportCommand extends Command
         return $data;
     }
 
-    protected function importDataBatch(array $batchData, SearchClient $algoliaClient, string $indexName) {
-        sleep(1); //@todo
+    protected function importDataBatch(array $batchData, Searchindex $algoliaIndex) {
+        // Intentionally not catching exceptions at this point
+        $algoliaIndex->saveObjects($batchData);
     }
 
     protected function importData(
         array $data,
         int $batchSize,
-        SearchClient $algoliaClient,
-        string $indexName,
-        callable $progressCallback
+        SearchIndex $algoliaIndex,
+        callable $progressCallback,
+        callable $errorCallback
     ) {
         $i = 0;
         $batch = array_slice($data, $i, $batchSize);
 
         while(!empty($batch)) {
-            $this->importDataBatch($batch, $algoliaClient, $indexName);
+            try {
+                $this->importDataBatch($batch, $algoliaIndex);
+            } catch (\Exception $e) {
+                $errorCallback($e, $batch);
+            }
 
             $progressCallback(count($batch));
 
             // prep for next iteration
             $i += $batchSize;
             $batch = array_slice($data, $i, $batchSize);
-
-            if ($i > 50)
-                break; //@todo
         }
     }
 
-    protected function getAlgoliaClient(string $applicationId, string $apiKey) : SearchClient
+    protected function getAlgoliaIndex(string $applicationId, string $apiKey, string $indexName) : SearchIndex
     {
         try {
-            return SearchClient::create($applicationId, $apiKey);
+            $client = SearchClient::create($applicationId, $apiKey);
+            return $client->initIndex($indexName);
         } catch (\Exception $e) {
             $output->writeln('Unable to initalize Algolia client');
             throw $e;
@@ -118,15 +122,27 @@ class AlgoliaImportCommand extends Command
 
         $importData = $this->getImportData($inputFilename);
 
-        $algoliaClient = $this->getAlgoliaClient($applicationId, $apiKey);
-        $algoliaClient->initIndex($indexName); //@todo
+        $algoliaIndex = $this->getAlgoliaIndex($applicationId, $apiKey, $indexName);
 
 
         // We have valid params, data, and client. Let's import!
         $io->progressStart(count($importData));
-        $this->importData($importData, $batchSize, $algoliaClient, $indexName, function($progressCount) use ($io) {
-            $io->progressAdvance($progressCount);
-        });
+        $this->importData(
+            $importData,
+            $batchSize,
+            $algoliaIndex,
+            function(int $progressCount) use ($io) {
+                $io->progressAdvance($progressCount);
+            },
+            function(\Exception $e, array $batchData) use ($output) {
+                //@todo: formatting
+                $output->writeln("\n\nUnable to save batch to Algolia");
+                $output->writeln("Data:");
+                $output->writeln(print_r($batchData, true));
+
+                throw new RuntimeException($e->getMessage());
+            }
+        );
         $io->progressFinish();
 
         return Command::SUCCESS;
