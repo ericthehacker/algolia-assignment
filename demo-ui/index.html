@@ -17,7 +17,7 @@
 </head>
 
 <body>
-  <header class="header">
+  <!-- <header class="header">
     <h1 class="header-title">
       <a href="/">demo-ui</a>
     </h1>
@@ -40,17 +40,40 @@
         <div id="pagination"></div>
       </div>
     </div>
-  </div>
+  </div> -->
 
-  <!-- <div class="ais-InstantSearch">
-    <h1>InstantSearch.js e-commerce demo</h1>
+  <div class="ais-InstantSearch">
+    <h1>E-commerce Algolia Demo</h1>
   
+    <div class="left-panel">
+      <div id="clear-refinements"></div>
+  
+      <h2>Brands</h2>
+      <div id="brand-list"></div>
+
+      <h2>Categories</h2>
+      <div id="categories-list"></div>
+
+      <h2>Free Shipping</h2>
+      <div id="free-shipping-list"></div>
+
+      <h2>Price</h2>
+      <div id="price-list"></div>
+
+      <h2>Rating</h2>
+      <div id="rating-list"></div>
+    </div>
+
     <div class="right-panel">
       <div id="searchbox"></div>
+      <div id="sort-by-wrapper">
+        <strong>Sort By</strong>
+        <div id="sort-by"></div>
+      </div>
       <div id="hits"></div>
       <div id="pagination"></div>
     </div>
-  </div> -->
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4.10.5/dist/algoliasearch-lite.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4.60.0"></script>
