@@ -33,3 +33,23 @@ php application.php algolia-import --application-id <application ID> --api-key <
 ```
 
 NOTE: Add `-vvv` flag to see time elapsed and estimated time remaining during the import.
+
+## Demo UI
+
+### Installation
+
+```
+cd demo-ui
+npm install
+```
+
+### Usage
+
+```
+cd demo-ui
+npm start
+```
+
+The Demo UI can been seen at <http://localhost:3000> as indicated in the success messgae.
+
+NOTE: press CTRL+C to stop running the demo UI.
